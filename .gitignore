@@ -1,0 +1,33 @@
+.venv
+.venv-1
+*.pyc
+__pycache__
+
+# Python
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Local environments
+venv/
+.venv-*/
+
+# Generated simulation results and model checkpoints
+/results/
+
+# Node dependencies
+node_modules/
+
+# Editor and operating-system files
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

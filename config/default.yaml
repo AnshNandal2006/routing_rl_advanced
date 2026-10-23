@@ -1,0 +1,62 @@
+# ---------------------------------------------------------------------------
+# Default configuration: ONE reproducible failure/recovery experiment.
+# Every key below is part of the Config schema. Scenario variations (normal load, load sweep,
+# bursts, failure/recovery) live in config/experiments.yaml and are applied on top of this file.
+# Override anything from the command line:   python main.py --set traffic.rate_pps=40
+# ---------------------------------------------------------------------------
+simulation:
+  duration: 90.0        # simulated seconds
+  dt: 0.01              # time step (s)
+  warmup: 8.0           # packets created before this are excluded from summary metrics
+  seed: 42              # traffic seed (and exploration/initialisation seed for learning policies)
+  sample_every: 5       # take a metrics sample every N steps (0.05 s)
+  verbose: false
+
+traffic:
+  type: poisson         # poisson | constant | bursty | multi_flow
+  sources: ["S"]        # geometric topology labels its farthest pair S and D
+  destinations: ["D"]
+  rate_pps: 28.0        # offered load per source-destination pair (packets/s)
+  burst_on: 2.0         # bursty only: seconds of high-rate traffic per cycle
+  burst_off: 3.0        # bursty only: seconds of base-rate traffic per cycle
+  burst_multiplier: 3.5 # bursty only: rate multiplier during the "on" phase
+  priority_ratio: 0.12  # fraction of packets that are priority class
+  flows: []             # multi_flow only: [{src: A, dst: B, rate: 10, type: constant}]
+
+network:
+  topology: geometric   # geometric | diamond | mesh | scale_free | hierarchical | grid | ring
+  default_queue_size: 120
+  default_ttl: 7.0      # packet lifetime (s)
+  default_capacity: 80.0
+  propagation_delay: 0.005
+  n_nodes_min: 10       # geometric: random node count in [min, max]
+  n_nodes_max: 30
+  enable_failures: true
+  failure_schedule:     # outage starts after warm-up and leaves time to observe recovery
+    - t_start: 35.0
+      t_end: 50.0
+      link: ["S", "R0"] # if this link does not exist the simulator uses the topology's default link
+
+routing:
+  method: shortest_path # shortest_path | congestion_aware | tabular_q | dqn  (dqn needs PyTorch)
+  alpha: 1.5            # congestion_aware: weight of delay terms against hop count
+  hop_penalty: -1.0     # reward shaping (learning policies)
+  queue_penalty_scale: -2.5
+  delivery_bonus: 45.0
+  drop_penalty: -55.0
+  latency_scale: -0.4
+  dqn:
+    hidden_dims: [128, 128, 64]
+    learning_rate: 0.001
+    gamma: 0.95
+    epsilon_start: 0.95
+    epsilon_end: 0.05
+    epsilon_decay: 0.9975
+    batch_size: 64
+    buffer_size: 40000
+    target_update_freq: 150
+    train_every: 4
+    min_buffer: 400
+    double_dqn: true
+    dueling: true
+    device: cpu

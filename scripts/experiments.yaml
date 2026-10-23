@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# Experiment plan used by scripts/run_comparison.py (read as plain YAML, applied on top of
+# config/default.yaml with dotted-path overrides). All four methods see identical topology,
+# traffic seed, parameters and failure events inside every scenario/seed combination.
+# ---------------------------------------------------------------------------
+methods: [shortest_path, congestion_aware, tabular_q, dqn]
+baseline: shortest_path        # paired differences are reported against this method
+seeds: [11, 12, 13, 14, 15]    # repeated runs; the traffic trace and learning seeds change per seed
+topology_seed: 42              # the network itself stays fixed across seeds
+
+scenarios:
+  normal_load:
+    description: Steady Poisson traffic at moderate load, no failures.
+    overrides:
+      traffic.type: poisson
+      traffic.rate_pps: 25.0
+      network.enable_failures: false
+
+  increasing_load:
+    description: Offered-load sweep to expose bottleneck and queueing effects (one run per value).
+    sweep:
+      parameter: traffic.rate_pps
+      values: [10.0, 20.0, 30.0, 40.0, 50.0]
+    overrides:
+      traffic.type: poisson
+      network.enable_failures: false
+
+  burst_traffic:
+    description: Base load with periodic bursts (rate x multiplier during the on-phase).
+    overrides:
+      traffic.type: bursty
+      traffic.rate_pps: 18.0
+      traffic.burst_on: 2.0
+      traffic.burst_off: 3.0
+      traffic.burst_multiplier: 3.5
+      network.enable_failures: false
+
+  failure_recovery:
+    description: Steady load, the topology's representative link goes down at 35 s and returns at 50 s.
+    overrides:
+      traffic.type: poisson
+      traffic.rate_pps: 28.0
+      network.enable_failures: true
+      network.failure_schedule:
+        - {t_start: 35.0, t_end: 50.0, link: auto}   # "auto" = traffic_defaults() link for the topology
